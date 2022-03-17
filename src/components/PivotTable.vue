@@ -295,7 +295,9 @@ export default {
       return [...this.cols].sort(composedSortFunction)
     },
     // Property to watch specific field changes
-    fields: function() {
+    fieldValues: function() {
+      console.log(this.colFields)
+      console.log("row fields = ",this.rowFields)
       return [
         [this.colFields, this.rowFields],
         [this.colFields.map(field => field.headerSlotNames), this.rowFields.map(field => field.headerSlotNames)],
@@ -522,7 +524,7 @@ export default {
   },
   watch: {
     // Check if fields changed
-    fields: function(val, oldVal) {
+    fieldValues: function(val, oldVal) {
       if (!isEqual(val[0], oldVal[0])) {
         // Fields were moved
         this.updateValues()
