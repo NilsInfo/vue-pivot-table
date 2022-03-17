@@ -62,7 +62,7 @@
                 </div>
             </div>
             <!-- Column fields -->
-            <div class="cell auto">
+            <div class="cell">
                 <div class="drag-area border-primary" :class="dragAreaClass">
                     <div class="drag-area-title mb-3">{{ colsLabelText }}</div>
                     <draggable
@@ -98,18 +98,19 @@
                             <div class="drag-area-title mb-3">{{ rowsLabelText }}</div>
                             <draggable
                                 v-model="internal.rowFieldKeys"
-                                class="grid-x drag-area-zone"
+                                class="grid-x gutter-sm drag-area-zone"
                                 group="fields"
                                 handle=".btn-draggable"
                                 @start="start"
                                 @end="end"
                             >
-                                <div v-for="key in internal.rowFieldKeys" :key="key" class="cell field">
+                                <div v-for="key in internal.rowFieldKeys" :key="key" class="field">
                                     <field-label
                                         :field="fieldsWithValues[key]"
                                         v-model="fieldValues[key]"
                                         :select-all-text="selectAllText"
                                         :unselect-all-text="unselectAllText"
+                                        class="cell"
                                     >
                                         <!-- pass down scoped slots -->
                                         <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope"
@@ -267,6 +268,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        displayedElements: {
+            type: Object,
+            default: {},
+        }
     },
     data: function () {
         const fieldValues = {};
@@ -282,10 +287,7 @@ export default {
                 rowFieldKeys: this.rowFieldKeys,
                 colFieldKeys: this.colFieldKeys,
             },
-            displayedElements: {
-                nbActions: { label: "nombre d'actions", b: 2 },
-                timeActions: { label: 'temps des actions', d: 4 },
-            },
+            
             displayedElementsValues: [],
             fieldValues,
             dragging: false,
@@ -323,8 +325,6 @@ export default {
                     field.sort || naturalSort,
                 );
             });
-            console.log('fieldValues : ', this.fieldValues);
-            console.log('field with values : ', fieldsWithValues);
             return fieldsWithValues;
         },
         // Fields selected values as set
@@ -354,9 +354,7 @@ export default {
                     field.headerSlotNames = field.headers
                         .filter((header) => header.checked)
                         .map((header) => header.slotName);
-                    console.log(field.headerSlotNames);
                 }
-                console.log('check');
                 // Add selected values
                 if (field.valueFilter) {
                     field.valuesFiltered = this.valuesFiltered[field.key];
@@ -378,9 +376,7 @@ export default {
                     field.headerSlotNames = field.headers
                         .filter((header) => header.checked)
                         .map((header) => header.slotName);
-                    console.log(field.headerSlotNames);
                 }
-                console.log('check2');
 
                 // Add selected values
                 if (field.valueFilter) {
@@ -388,7 +384,6 @@ export default {
                 }
                 colFields.push(field);
             });
-            console.log(colFields);
             return colFields;
         },
         // Drag area class
@@ -434,7 +429,6 @@ export default {
         },
     },
     created: function () {
-        console.log('values', this.values);
         this.showSettings = this.defaultShowSettings;
         this.updateFieldValues();
     },
