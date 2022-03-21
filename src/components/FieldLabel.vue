@@ -100,10 +100,10 @@ export default {
   },
   props: {
     fieldValues: {
-      type: Array
+      type: Array,
     },
     field: {
-      type: Object
+      type: Object,
     },
     variant: {
       type: String,
@@ -147,7 +147,16 @@ export default {
         valueObject.checked = target
       })
     }
+  },
+  watch: {
+    field: {
+      handler(){
+        this.$emit("change",this.field)
+      },
+      deep:true
+    }
   }
+    
 }
 </script>
 

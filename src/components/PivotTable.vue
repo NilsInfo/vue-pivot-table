@@ -239,12 +239,21 @@ export default {
       type: Array,
       default: () => []
     },
-    reducer: {
-      type: Function,
-      default: sum => sum + 1
+    selectedReducers: {
+      type: Object,
+      default() {
+        return {
+          'count': (sum) => sum + 1
+        }
+      },
     },
-    reducerInitialValue: {
-      default: 0
+    reducersInitialValues: {
+      type: Object,
+      default(){
+        return {
+          'count': 0,
+        }   
+      },
     },
     noDataWarningText: {
       type: String,
@@ -296,8 +305,6 @@ export default {
     },
     // Property to watch specific field changes
     fieldValues: function() {
-      console.log(this.colFields)
-      console.log("row fields = ",this.rowFields)
       return [
         [this.colFields, this.rowFields],
         [this.colFields.map(field => field.headerSlotNames), this.rowFields.map(field => field.headerSlotNames)],
@@ -402,7 +409,7 @@ export default {
   methods: {
     // Get value from valuesMap
     value: function(row, col) {
-      return this.valuesMap.get([...row, ...col]) || this.reducerInitialValue
+      return this.valuesMap[[...row, ...col]] || this.reducersInitialValues["count"]
     },
     // Get labels for a cell
     labels: function(row, col) {
@@ -442,7 +449,10 @@ export default {
       this.computingInterval = setTimeout(() => {
         const rows = []
         const cols = []
-        const valuesMap = new ManyKeysMap()
+        // valuesMap = {keyA : { key1:value1, key2:value2}, keyB: {}}
+        const valuesMap = {} 
+        // valuesDisplayMap = {keyA: "value1, value2", keyB: ""}
+        const valuesDisplayMap = {}
         const labelsMap = new ManyKeysMap()
 
         const fields = [...this.rowFields, ...this.colFields]
@@ -489,9 +499,9 @@ export default {
           // Update valuesMap
           if (updateValuesMap) {
             const key = [ ...rowKey, ...colKey ]
-            const previousValue = valuesMap.get(key) || cloneDeep(this.reducerInitialValue)
-
-            valuesMap.set(key, this.reducer(previousValue, item))
+            const previousValues = this.getPreviousValues(key, valuesMap)
+            valuesMap[key] =  this.getReducedValues(previousValues, item)
+            valuesDisplayMap[key] = Object.values(valuesMap[key]).join()
           }
         })
 
@@ -509,12 +519,29 @@ export default {
 
         this.rows = rows
         this.cols = cols
-        if (updateValuesMap) this.valuesMap = valuesMap
+        if (updateValuesMap) this.valuesMap = valuesDisplayMap
         this.labelsMap = labelsMap
 
         this.isDataComputing = false
         this.updateInternalFields()
       }, 0)
+    },
+    getPreviousValues: function(key, valuesMap){
+      if(key in valuesMap){
+        return valuesMap[key]
+      } else {
+        const initialValues = {}
+        for(const key in this.selectedReducers){
+          initialValues[key] = this.reducersInitialValues[key]
+        }
+        return initialValues
+      }
+    },
+    getReducedValues: function(previousValues, item){
+      for(const key in this.selectedReducers){
+        previousValues[key] = this.selectedReducers[key](previousValues[key],item)
+      }
+      return previousValues
     },
     // Update internal fields only
     updateInternalFields: function() {
@@ -535,6 +562,9 @@ export default {
         // Field header slot names changed
         this.updateValues(false)
       }
+    },
+    selectedReducers: function() {
+      this.updateValues()
     },
     data: function() {
       this.updateValues()

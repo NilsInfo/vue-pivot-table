@@ -18,21 +18,24 @@
         <div class="grid-y" v-if="showSettings">
             <div class="cell">
                 <div class="grid-x">
-                    <!-- Values -->
+
+                    <!-- Values types -->
                     <div class="cell shrink">
                         <div class="drag-area border-primary" :class="dragAreaClass">
                             <div class="drag-area-title mb-3">{{ valuesLabelText }}</div>
                             <draggable
                                 class="drag-area-zone gutter-sm"
-                                group="displayedElements"
+                                v-model="internal.valuesTypesKeys"
+                                group="valuesTypes"
                                 handle=".btn-draggable"
                                 @start="start"
                                 @end="end"
                             >
-                                <div v-for="key in valuesKeys" :key="key" class="field">
+                                <div v-for="key in internal.valuesTypesKeys" :key="key" class="field">
                                     <field-label
-                                        :field="displayedElements[key]"
+                                        :field="valuesTypes[key]"
                                         :fieldValues="displayedElementsValues"
+                                        @change="updateValues"
                                         :select-all-text="selectAllText"
                                         :unselect-all-text="unselectAllText"
                                     >
@@ -45,22 +48,39 @@
                             </draggable>
                         </div>
                     </div>
+
                     <!-- Available fields for values -->
                     <div class="cell auto">
                         <div class="drag-area border-primary" :class="dragAreaClass">
-                            <div class="drag-area-title mb-3">{{ availableValuesLabelText }}</div>
+                            <div class="drag-area-title mb-3">{{ availableValuesTypesLabelText }}</div>
                             <draggable
                                 class="drag-area-zone gutter-sm"
-                                group="displayedElements"
+                                v-model="internal.availableValuesTypesKeys"
+                                group="valuesTypes"
                                 handle=".btn-draggable"
                                 @start="start"
                                 @end="end"
                             >
+                                <div v-for="key in internal.availableValuesTypesKeys" :key="key" class="field">
+                                    <field-label
+                                        :field="valuesTypes[key]"
+                                        :fieldValues="displayedElementsValues"
+                                        @change="updateValues"
+                                        :select-all-text="selectAllText"
+                                        :unselect-all-text="unselectAllText"
+                                    >
+                                        <!-- pass down scoped slots -->
+                                        <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope"
+                                            ><slot :name="slot" v-bind="scope"
+                                        /></template>
+                                    </field-label>
+                                </div>
                             </draggable>
                         </div>
                     </div>
                 </div>
             </div>
+
             <!-- Column fields -->
             <div class="cell">
                 <div class="drag-area border-primary" :class="dragAreaClass">
@@ -92,6 +112,7 @@
 
             <div class="cell">
                 <div class="grid-x">
+
                     <!-- Row fields -->
                     <div v-if="showSettings" class="cell shrink">
                         <div class="drag-area border-primary" :class="dragAreaClass">
@@ -159,8 +180,8 @@
                 :data="data"
                 :row-fields="rowFields"
                 :col-fields="colFields"
-                :reducer="reducer"
-                :reducer-initial-value="reducerInitialValue"
+                :selected-reducers="internal.selectedReducers"
+                :reducers-initial-values="reducersInitialValues"
                 :no-data-warning-text="noDataWarningText"
                 :is-data-loading="isDataLoading"
             >
@@ -194,7 +215,11 @@ export default {
             type: Array,
             default: () => [],
         },
-        valuesKeys: {
+        valuesTypesKeys: {
+            type: Array,
+            default: () => [],
+        },
+        availableValuesTypesKeys: {
             type: Array,
             default: () => [],
         },
@@ -210,12 +235,21 @@ export default {
             type: Array,
             default: () => [],
         },
-        reducer: {
-            type: Function,
-            default: (sum) => sum + 1,
+        reducers: {
+            type: Object,
+            default() {
+                return {
+                'count': (sum) => sum + 1
+                }
+            },
         },
-        reducerInitialValue: {
-            default: 0,
+        reducersInitialValues: {
+            type: Object,
+            default(){
+                return {
+                'count': 0,
+                }   
+            },
         },
         accordion_id: {
             default: 1,
@@ -228,7 +262,7 @@ export default {
             type: String,
             default: 'Champs disponibles',
         },
-        availableValuesLabelText: {
+        availableValuesTypesLabelText: {
             type: String,
             default: 'Champs disponibles (pour les valeurs)',
         },
@@ -268,7 +302,7 @@ export default {
             type: Boolean,
             default: false,
         },
-        displayedElements: {
+        valuesTypes: {
             type: Object,
             default: {},
         }
@@ -286,6 +320,10 @@ export default {
                 availableFieldKeys: this.availableFieldKeys,
                 rowFieldKeys: this.rowFieldKeys,
                 colFieldKeys: this.colFieldKeys,
+                availableValuesTypesKeys: this.availableValuesTypesKeys,
+                valuesTypesKeys: this.valuesTypesKeys,
+                selectedReducers: {},
+                reducersInitialValues: this.reducersInitialValues,
             },
             
             displayedElementsValues: [],
@@ -397,6 +435,20 @@ export default {
         },
     },
     methods: {
+        updateValues: function(value){
+            this.internal.selectedReducers = {}
+            const valueLabel = value.label
+            for(const reducer of value.headers){
+                const availableReducers = Object.keys(this.reducers)
+
+                const reducerLabel = reducer.slotName
+                if(reducer.checked && availableReducers.includes(reducerLabel)){
+                    this.internal.selectedReducers[reducerLabel] = this.reducers[reducerLabel]
+                }
+            }
+            console.log("reducers utilisés : ",this.internal.selectedReducers)
+            console.log(value)
+        },
         // Toggle settings
         toggleShowSettings: function () {
             this.showSettings = !this.showSettings;
@@ -424,12 +476,25 @@ export default {
         data: function () {
             this.updateFieldValues();
         },
-        values: function () {
-            return this.values;
+        'internal.valuesTypesKeys': function() {
+            if(this.internal.valuesTypesKeys.length === 1 && this.internal.valuesTypesKeys.includes("timeActions")){
+                console.log("only timeactions in there")
+                // this.internal.reducer = (sum, item) => sum + parseFloat(item.duration);
+                this.updateFieldValues()
+            } else {
+                // this.internal.reducer = (sum, item) => sum + 1;
+                this.updateFieldValues()
+
+            }
         },
+        'internal.availableValuesTypesKeys': function() {
+            console.log(this.internal.availableValuesTypesKeys)
+        }
     },
     created: function () {
+        console.log(this.data)
         this.showSettings = this.defaultShowSettings;
+        this.updateValues(this.valuesTypes[this.valuesTypesKeys[0]])
         this.updateFieldValues();
     },
 };
