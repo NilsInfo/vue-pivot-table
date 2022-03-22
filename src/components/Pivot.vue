@@ -184,6 +184,7 @@
                 :reducers-initial-values="reducersInitialValues"
                 :no-data-warning-text="noDataWarningText"
                 :is-data-loading="isDataLoading"
+                :selected-values-types="selectedValuesTypes"
             >
                 <!-- pass down scoped slots -->
                 <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope"
@@ -433,6 +434,13 @@ export default {
             const maxWidth = '100%'; // this.showSettings ? 'calc(100% - 200px - 2rem)' : '100%'
             return `max-width: ${maxWidth};`;
         },
+        selectedValuesTypes: function() {
+            const selectedValuesTypes = []
+            for(const key of this.valuesTypesKeys){
+                selectedValuesTypes.push(this.valuesTypes[key])
+            }
+            return selectedValuesTypes;
+        }
     },
     methods: {
         updateValues: function(value){

@@ -224,6 +224,7 @@ import { firstBy } from 'thenby'
 import naturalSort from 'javascript-natural-sort'
 import cloneDeep from 'lodash-es/cloneDeep'
 import isEqual from 'lodash-es/isEqual'
+import _ from 'lodash';
 
 export default {
   props: {
@@ -247,6 +248,10 @@ export default {
         }
       },
     },
+    selectedValuesTypes: {
+      type: Array,
+      default: () => []
+    },
     reducersInitialValues: {
       type: Object,
       default(){
@@ -262,7 +267,7 @@ export default {
     isDataLoading: {
       type: Boolean,
       default: false
-    }
+    },
   },
   data: function() {
     return {
@@ -413,7 +418,7 @@ export default {
     },
     // Get labels for a cell
     labels: function(row, col) {
-      return this.labelsMap.get([...row, ...col]) || []
+      return this.labelsMap[[...row, ...col]] || []
     },
     // Get colspan/rowspan size
     spanSize: function(values, valueIndex, fieldIndex) {
@@ -453,7 +458,7 @@ export default {
         const valuesMap = {} 
         // valuesDisplayMap = {keyA: "value1, value2", keyB: ""}
         const valuesDisplayMap = {}
-        const labelsMap = new ManyKeysMap()
+        const labelsMap = {}
 
         const fields = [...this.rowFields, ...this.colFields]
 
@@ -500,8 +505,9 @@ export default {
           if (updateValuesMap) {
             const key = [ ...rowKey, ...colKey ]
             const previousValues = this.getPreviousValues(key, valuesMap)
-            valuesMap[key] =  this.getReducedValues(previousValues, item)
-            valuesDisplayMap[key] = Object.values(valuesMap[key]).join()
+            valuesMap[key] =  this.getReducedValues(previousValues, item)  
+            
+            valuesDisplayMap[key] = this.valuesToStr(key, valuesMap)
           }
         })
 
@@ -513,7 +519,7 @@ export default {
               field,
               value: key[fieldIndex]
             }))
-            labelsMap.set(key, labels)
+            labelsMap[key] = labels
           })
         })
 
@@ -526,20 +532,36 @@ export default {
         this.updateInternalFields()
       }, 0)
     },
+    valuesToStr: function(key, valuesMap){
+        const valuesUsedForReducers = Object.values(valuesMap[key])
+        const values = []
+        for(const val of valuesUsedForReducers){
+          if(Array.isArray(val)){
+            console.log("harray !")
+            values.push(val[0])
+          } else {
+            values.push(val)
+          }
+        }
+        return values.join(', ')
+    },
     getPreviousValues: function(key, valuesMap){
       if(key in valuesMap){
         return valuesMap[key]
       } else {
         const initialValues = {}
-        for(const key in this.selectedReducers){
-          initialValues[key] = this.reducersInitialValues[key]
+        for(const reducer in this.selectedReducers){
+          initialValues[reducer] = this.reducersInitialValues[reducer]
         }
         return initialValues
       }
     },
     getReducedValues: function(previousValues, item){
+      console.log("selected values types :")
+      console.log(this.selectedValuesTypes)
+      const valueReference = this.selectedValuesTypes[0]["reference"] //CHANGE THE HARDCODED "0" WHEN THERE WILL BE MORE VALUESTYPES
       for(const key in this.selectedReducers){
-        previousValues[key] = this.selectedReducers[key](previousValues[key],item)
+        previousValues[key] = this.selectedReducers[key](previousValues[key],parseFloat(item[valueReference])) 
       }
       return previousValues
     },
